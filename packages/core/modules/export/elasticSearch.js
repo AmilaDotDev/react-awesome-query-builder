@@ -1,5 +1,5 @@
-import {getWidgetForFieldOp} from "../utils/ruleUtils";
-import {defaultConjunction} from "../utils/defaultUtils";
+import { getWidgetForFieldOp } from "../utils/ruleUtils";
+import { defaultConjunction } from "../utils/defaultUtils";
 
 
 /**
@@ -50,38 +50,38 @@ function buildEsRangeParameters(value, operator) {
 
   //todo: move this logic into config
   switch (operator) {
-  case "on_date": //todo: not used
-  case "not_on_date":
-  case "equal":
-  case "select_equals":
-  case "not_equal":
-    return {
-      gte: "".concat(dateTime, "||/d"),
-      lte: "".concat(dateTime, "||+1d")
-    };
+    case "on_date": //todo: not used
+    case "not_on_date":
+    case "equal":
+    case "select_equals":
+    case "not_equal":
+      return {
+        gte: "".concat(dateTime, "||/d"),
+        lte: "".concat(dateTime, "||+1d")
+      };
 
-  case "less_or_equal":
-    return {
-      lte: "".concat(dateTime)
-    };
+    case "less_or_equal":
+      return {
+        lte: "".concat(dateTime)
+      };
 
-  case "greater_or_equal":
-    return {
-      gte: "".concat(dateTime)
-    };
+    case "greater_or_equal":
+      return {
+        gte: "".concat(dateTime)
+      };
 
-  case "less":
-    return {
-      lt: "".concat(dateTime)
-    };
+    case "less":
+      return {
+        lt: "".concat(dateTime)
+      };
 
-  case "greater":
-    return {
-      gt: "".concat(dateTime)
-    };
+    case "greater":
+      return {
+        gt: "".concat(dateTime)
+      };
 
-  default:
-    return undefined;
+    default:
+      return undefined;
   }
 }
 
@@ -110,20 +110,20 @@ function buildEsWildcardParameters(value) {
 function determineOccurrence(combinator, not) {
   //todo: move into config, like mongoConj
   switch (combinator) {
-  case "AND":
-    return not ? "must_not" : "must";
+    case "AND":
+      return not ? "must_not" : "must";
     // -- AND
 
-  case "OR":
-    return not ? "should_not" : "should";
+    case "OR":
+      return not ? "should_not" : "should";
     // -- OR
 
-  case "NOT":
-    return not ? "must" : "must_not";
+    case "NOT":
+      return not ? "must" : "must_not";
     // -- NOT AND
 
-  default:
-    return undefined;
+    default:
+      return undefined;
   }
 }
 
@@ -143,18 +143,18 @@ function determineQueryField(fieldDataType, fullFieldName, queryType) {
   }
 
   switch (queryType) {
-  case "term":
-  case "wildcard":
-    return "".concat(fullFieldName, ".keyword");
+    case "term":
+    case "wildcard":
+      return "".concat(fullFieldName, ".keyword");
 
-  case "geo_bounding_box":
-  case "range":
-  case "match":
-    return fullFieldName;
+    case "geo_bounding_box":
+    case "range":
+    case "match":
+      return fullFieldName;
 
-  default:
-    console.error("Can't determine query field for query type ".concat(queryType));
-    return null;
+    default:
+      console.error("Can't determine query field for query type ".concat(queryType));
+      return null;
   }
 }
 
@@ -173,37 +173,38 @@ function determineField(fieldName, config) {
 function buildParameters(queryType, value, operator, fieldName, config) {
   const textField = determineField(fieldName, config);
   switch (queryType) {
-  case "filter":
-    //todo: elasticSearchScript - not used
-    return {
-      script: config.operators[operator].elasticSearchScript(fieldName, value)
-    };
+    case "filter":
+      //todo: elasticSearchScript - not used
+      return {
+        script: config.operators[operator].elasticSearchScript(fieldName, value)
+      };
 
-  case "exists":
-    return { field: fieldName };
+    case "exists":
+      return { field: fieldName };
 
-  case "match":
-    return { [textField]: value[0] };
+    case "match":
+      return { [textField]: value[0] };
 
-  case "term":
-    return { [fieldName]: value[0] };
+    case "term":
+    case "terms":
+      return { [fieldName]: value[0] };
 
-  //todo: not used
-  // need to add geo type into RAQB or remove this code
-  case "geo_bounding_box":
-    return { [fieldName]: buildEsGeoPoint(value[0]) };
+    //todo: not used
+    // need to add geo type into RAQB or remove this code
+    case "geo_bounding_box":
+      return { [fieldName]: buildEsGeoPoint(value[0]) };
 
-  case "range":
-    return { [fieldName]: buildEsRangeParameters(value, operator) };
+    case "range":
+      return { [fieldName]: buildEsRangeParameters(value, operator) };
 
-  case "wildcard":
-    return { [fieldName]: buildEsWildcardParameters(value[0]) };
+    case "wildcard":
+      return { [fieldName]: buildEsWildcardParameters(value[0]) };
 
-  case "regexp":
-    return { [fieldName]: buildRegexpParameters(value[0]) };
+    case "regexp":
+      return { [fieldName]: buildRegexpParameters(value[0]) };
 
-  default:
-    return undefined;
+    default:
+      return undefined;
   }
 }
 /**
@@ -216,7 +217,7 @@ function buildParameters(queryType, value, operator, fieldName, config) {
  * @returns {object} - The ES rule
  * @private
  */
-function buildEsRule(fieldName, value, operator, config, valueSrc) {
+function buildEsRule(fieldName, value, operator, config, valueSrc, childType) {
   if (!fieldName || !operator || value == undefined)
     return undefined; // rule is not fully entered
   let op = operator;
@@ -233,7 +234,7 @@ function buildEsRule(fieldName, value, operator, config, valueSrc) {
     opConfig = config.operators[op];
     ({ elasticSearchQueryType } = opConfig);
   }
-  
+
   // handle if value 0 has multiple values like a select in a array
   const widget = getWidgetForFieldOp(config, fieldName, op, valueSrc);
   const widgetConfig = config.widgets[widget];
@@ -264,18 +265,26 @@ function buildEsRule(fieldName, value, operator, config, valueSrc) {
     parameters = buildParameters(queryType, value, op, fieldName, config);
   }
 
+  let esRule = undefined;
+
   if (not) {
-    return {
+    esRule = {
       bool: {
         must_not: {
-          [queryType]: {...parameters}
+          [queryType]: { ...parameters }
         }
       }
     };
   } else {
-    return {
-      [queryType]: {...parameters}
+    esRule = {
+      [queryType]: { ...parameters }
     };
+  }
+
+  if (childType === null)
+    return esRule;
+  else {
+    return JSON.parse(JSON.stringify(esRule).replace(`${childType}.`, ""));
   }
 }
 
@@ -289,20 +298,35 @@ function buildEsRule(fieldName, value, operator, config, valueSrc) {
  * @private
  * @returns {object} - The ES group
  */
-function buildEsGroup(children, conjunction, not, recursiveFxn, config) {
+function buildEsGroup(children, conjunction, not, recursiveFxn, config, type, field) {
   if (!children || !children.size)
     return undefined;
+
   const childrenArray = children.valueSeq().toArray();
   const occurrence = determineOccurrence(conjunction, not);
   const result = childrenArray.map((c) => recursiveFxn(c, config)).filter(v => v !== undefined);
   if (!result.length)
     return undefined;
   const resultFlat = result.flat(Infinity);
-  return {
+  const data = {
     bool: {
       [occurrence]: resultFlat
     }
   };
+
+  if (type === 'rule_group') {
+    return {
+
+      has_child: {
+        type: field,
+        query: {
+          ...data
+        }
+      }
+    }
+  } else {
+    return data;
+  }
 }
 
 export function elasticSearchFormat(tree, config) {
@@ -315,6 +339,8 @@ export function elasticSearchFormat(tree, config) {
     // -- field is null when a new blank rule is added
     const operator = properties.get("operator");
     const field = properties.get("field");
+    const propertyLineage = field?.split('.');
+    const childType = propertyLineage && Array.isArray(propertyLineage) && propertyLineage.length > 0 ? propertyLineage[0] : ''; //getChildType(field);
     const value = properties.get("value").toJS();
     const _valueType = properties.get("valueType")?.get(0);
     const valueSrc = properties.get("valueSrc")?.get(0);
@@ -326,20 +352,26 @@ export function elasticSearchFormat(tree, config) {
 
     if (value && Array.isArray(value[0])) {
       //TODO : Handle case where the value has multiple values such as in the case of a list
-      return value[0].map((val) => 
-        buildEsRule(field, [val], operator, config, valueSrc)
-      );
+      if (operator === 'select_any_in' || operator === 'select_not_any_in') {
+        return buildEsRule(field, value, operator, config, valueSrc, childType);
+      }
+
+      return value[0].map((val) => {
+        return buildEsRule(field, [val], operator, config, valueSrc, childType)
+      });
     } else {
-      return buildEsRule(field, value, operator, config, valueSrc);
+      return buildEsRule(field, value, operator, config, valueSrc, childType);
     }
   }
 
   if (type === "group" || type === "rule_group") {
+    const propertyLineage = properties.get("field")?.split('.');
     const not = properties.get("not");
     let conjunction = properties.get("conjunction");
     if (!conjunction)
       conjunction = defaultConjunction(config);
     const children = tree.get("children1");
-    return buildEsGroup(children, conjunction, not, elasticSearchFormat, config);
+    return buildEsGroup(children, conjunction, not, elasticSearchFormat, config, type,
+      propertyLineage && Array.isArray(propertyLineage) && propertyLineage.length > 0 ? propertyLineage[propertyLineage.length - 1] : '');
   }
 }
