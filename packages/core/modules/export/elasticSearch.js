@@ -369,7 +369,7 @@ export function elasticSearchFormat(tree, config) {
 
     const esGroup = buildEsGroup(children, conjunction, not, elasticSearchFormat, config, type, childTypePropertyName);
 
-    if (!esGroup)
+    if (!esGroup || !childTypePropertyName)
       return esGroup;
 
     return JSON.parse(JSON.stringify(esGroup).replace(`${childTypePropertyName}.`, ""));
