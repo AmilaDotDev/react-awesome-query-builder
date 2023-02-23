@@ -367,6 +367,11 @@ export function elasticSearchFormat(tree, config) {
     const children = tree.get("children1");
     const childTypePropertyName = propertyLineage && Array.isArray(propertyLineage) && propertyLineage.length > 0 ? propertyLineage[propertyLineage.length - 1] : '';
 
-    return JSON.parse(JSON.stringify(buildEsGroup(children, conjunction, not, elasticSearchFormat, config, type, childTypePropertyName)).replace(`${childType}.`, ""));
+    const esGroup = buildEsGroup(children, conjunction, not, elasticSearchFormat, config, type, childTypePropertyName);
+
+    if (!esGroup)
+      return esGroup;
+
+    return JSON.parse(JSON.stringify(esGroup).replace(`${childType}.`, ""));
   }
 }
