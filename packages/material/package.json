@@ -1,6 +1,6 @@
 {
   "name": "@react-awesome-query-builder/material",
-  "version": "v6.1.2-6",
+  "version": "v6.1.2-7",
   "description": "User-friendly query builder for React. Material-UI 4 widgets",
   "keywords": [
     "query-builder",

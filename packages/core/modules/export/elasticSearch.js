@@ -372,6 +372,6 @@ export function elasticSearchFormat(tree, config) {
     if (!esGroup)
       return esGroup;
 
-    return JSON.parse(JSON.stringify(esGroup).replace(`${childType}.`, ""));
+    return JSON.parse(JSON.stringify(esGroup).replace(`${childTypePropertyName}.`, ""));
   }
 }
