@@ -217,7 +217,7 @@ function buildParameters(queryType, value, operator, fieldName, config) {
  * @returns {object} - The ES rule
  * @private
  */
-function buildEsRule(fieldName, value, operator, config, valueSrc, childType) {
+function buildEsRule(fieldName, value, operator, config, valueSrc) {
   if (!fieldName || !operator || value == undefined)
     return undefined; // rule is not fully entered
   let op = operator;
@@ -281,11 +281,7 @@ function buildEsRule(fieldName, value, operator, config, valueSrc, childType) {
     };
   }
 
-  if (childType === null)
-    return esRule;
-  else {
-    return JSON.parse(JSON.stringify(esRule).replace(`${childType}.`, ""));
-  }
+  return esRule;
 }
 
 /**
@@ -339,8 +335,6 @@ export function elasticSearchFormat(tree, config) {
     // -- field is null when a new blank rule is added
     const operator = properties.get("operator");
     const field = properties.get("field");
-    const propertyLineage = field?.split('.');
-    const childType = propertyLineage && Array.isArray(propertyLineage) && propertyLineage.length > 0 ? propertyLineage[0] : ''; //getChildType(field);
     const value = properties.get("value").toJS();
     const _valueType = properties.get("valueType")?.get(0);
     const valueSrc = properties.get("valueSrc")?.get(0);
@@ -353,14 +347,14 @@ export function elasticSearchFormat(tree, config) {
     if (value && Array.isArray(value[0])) {
       //TODO : Handle case where the value has multiple values such as in the case of a list
       if (operator === 'select_any_in' || operator === 'select_not_any_in') {
-        return buildEsRule(field, value, operator, config, valueSrc, childType);
+        return buildEsRule(field, value, operator, config, valueSrc);
       }
 
       return value[0].map((val) => {
-        return buildEsRule(field, [val], operator, config, valueSrc, childType)
+        return buildEsRule(field, [val], operator, config, valueSrc)
       });
     } else {
-      return buildEsRule(field, value, operator, config, valueSrc, childType);
+      return buildEsRule(field, value, operator, config, valueSrc);
     }
   }
 
@@ -371,7 +365,8 @@ export function elasticSearchFormat(tree, config) {
     if (!conjunction)
       conjunction = defaultConjunction(config);
     const children = tree.get("children1");
-    return buildEsGroup(children, conjunction, not, elasticSearchFormat, config, type,
-      propertyLineage && Array.isArray(propertyLineage) && propertyLineage.length > 0 ? propertyLineage[propertyLineage.length - 1] : '');
+    const childTypePropertyName = propertyLineage && Array.isArray(propertyLineage) && propertyLineage.length > 0 ? propertyLineage[propertyLineage.length - 1] : '';
+
+    return JSON.parse(JSON.stringify(buildEsGroup(children, conjunction, not, elasticSearchFormat, config, type, childTypePropertyName)).replace(`${childType}.`, ""));
   }
 }
