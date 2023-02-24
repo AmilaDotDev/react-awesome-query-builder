@@ -317,6 +317,9 @@ function buildEsGroup(children, conjunction, not, recursiveFxn, config, type, fi
         type: field,
         query: {
           ...data
+        },
+        inner_hits: {
+          _source: ["*"]
         }
       }
     }
