@@ -375,8 +375,6 @@ export function elasticSearchFormat(tree, config) {
     if (!esGroup || !childTypePropertyName)
       return esGroup;
 
-    const regex = new RegExp(`${childTypePropertyName}.`, 'g')
-
-    return JSON.parse(JSON.stringify(esGroup).replace(regex, ""));
+    return JSON.parse(JSON.stringify(esGroup).replaceAll(`${childTypePropertyName}.`, ""));
   }
 }
