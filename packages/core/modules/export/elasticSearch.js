@@ -1,5 +1,6 @@
 import { getWidgetForFieldOp } from "../utils/ruleUtils";
 import { defaultConjunction } from "../utils/defaultUtils";
+import uuid from "../utils/uuid";
 
 
 /**
@@ -218,6 +219,10 @@ function buildParameters(queryType, value, operator, fieldName, config) {
  * @private
  */
 function buildEsRule(fieldName, value, operator, config, valueSrc) {
+  console.log('fieldName', { fieldName, config });
+
+  const isChildRule = fieldName && fieldName.indexOf('.') != -1;
+
   if (!fieldName || !operator || value == undefined)
     return undefined; // rule is not fully entered
   let op = operator;
@@ -281,7 +286,24 @@ function buildEsRule(fieldName, value, operator, config, valueSrc) {
     };
   }
 
-  return esRule;
+  if (isChildRule)
+    return esRule;
+
+  return {
+    has_child: {
+      type: 'newprofile',
+      query: {
+        has_parent: {
+          parent_type: 'member',
+          query: esRule
+        }
+      },
+      inner_hits: {
+        name: `newprofile_${uuid()}`,
+        _source: ["*"]
+      }
+    }
+  }
 }
 
 /**
@@ -319,6 +341,7 @@ function buildEsGroup(children, conjunction, not, recursiveFxn, config, type, fi
           ...data
         },
         inner_hits: {
+          name: `${field}_${uuid()}`,
           _source: ["*"]
         }
       }
